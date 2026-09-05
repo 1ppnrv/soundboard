@@ -11,14 +11,25 @@
 
     <Design.DataContext>
         <!-- This only sets the DataContext for the previewer in an IDE,
-             to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
+        to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
         <vm:MainWindowViewModel/>
     </Design.DataContext>
-    <StackPanel Name="MainPanel">
-        <Grid ShowGridLines="True" Margin="5" Name="MainGrid">
+    <Grid>
+        <StackPanel IsVisible="False" IsEnabled="False" Margin="5" Name="AddSoundGrid" VerticalAlignment="Center" HorizontalAlignment="Center">
+            <Border Background="Transparent">
+                <StackPanel >
+                    <TextBlock Name="SoundNameTextBlock"></TextBlock>
+                    <TextBox Name="SoundNameTextBox" PlaceholderText="Name displayed in the app, blank for file name"></TextBox>
+                    <Button Name="ValidateAddSound">Add sound</Button>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+        <StackPanel Name="MainPanel" HorizontalAlignment="Left" VerticalAlignment="Top">
+            <StackPanel Name="SoundsPanel" Orientation="Horizontal">
 
-        </Grid>
-
-    </StackPanel>
-
+            </StackPanel>
+            
+        </StackPanel>
+    <Button Click="AddSound" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="5">Add Sound</Button>
+    </Grid>
 </Window>
