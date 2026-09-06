@@ -28,8 +28,11 @@
             <StackPanel Name="SoundsPanel" Orientation="Horizontal">
 
             </StackPanel>
-            
+
         </StackPanel>
-    <Button Click="AddSound" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="5">Add Sound</Button>
+        <StackPanel VerticalAlignment="Bottom" HorizontalAlignment="Center" Orientation="Horizontal">
+            <Button Click="AddSound" Margin="5">Add Sound</Button>
+            <Button>Manage sounds</Button>
+        </StackPanel>
     </Grid>
 </Window>

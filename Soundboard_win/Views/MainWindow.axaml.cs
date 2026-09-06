@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using Avalonia;
+using Avalonia.Layout;
 
 namespace Soundboard_win.Views;
 
@@ -29,12 +30,10 @@ public partial class MainWindow : Window
     private void ListSounds()
     {
         SoundsPanel.Children.Clear();
-        string CurDir = System.IO.Directory.GetCurrentDirectory();
-        DirectoryInfo SoundsDir = new DirectoryInfo(CurDir + @".\sounds");
+        
         // Console.Write(CurDir + "\n");
 
         string SoundBindingsFileContent = File.ReadAllText("sounds/SoundBindings.json");
-        Console.WriteLine(SoundBindingsFileContent);
 
         if (SoundBindingsFileContent != null)
         {
@@ -49,76 +48,129 @@ public partial class MainWindow : Window
         {
             Console.WriteLine("json file not found or not valid");
         }
-        
-        FileInfo[] Files = SoundsDir.GetFiles("*.mp3");
+
+        List<string> Files = ListFilesLocal("sounds", "*.mp3");
         string str = "";
         
-        foreach(FileInfo file in Files ){
-            str = str + "," + file.Name;
-            string Content = file.Name;
+        foreach(string filename in Files){
+            str = str + "," + filename;
+            string Content = filename;
             if (JsonOk)
             {
-                if(SoundsNamesDict["names"] is JsonObject names && names[file.Name] is JsonValue name)
+                if(SoundsNamesDict["names"] is JsonObject names && names[filename] is JsonValue name)
                 Content = name.GetValue<string>();
             }
-
-            var button = new Button
+            
+            var SoundButton = new Button
             {
                 Width = 70,
                 Height = 70,
-                Content = Content,
-                Margin = new Thickness(5)
+                Content = Content
             };
-            button.Click += PlaySound;
-            SoundsPanel.Children.Add(button);
+
+            var PauseButton = new Button
+            {
+                Width = 25,
+                Height = 25,
+                Margin = new Thickness(8),
+                Content = "P",
+                VerticalAlignment = VerticalAlignment.Bottom,
+                Padding = new Thickness(2),
+                IsVisible = false,
+                IsEnabled = false
+            };
+
+            var StopButton = new Button
+            {
+                Width = 25,
+                Height = 25,
+                Margin = new Thickness(8),
+                Content = "S",
+                VerticalAlignment = VerticalAlignment.Bottom,
+                HorizontalAlignment = HorizontalAlignment.Right,
+                Padding = new Thickness(2),
+                IsVisible = false,
+                IsEnabled = false
+            };
+
+            var ButtonGrid = new Grid
+            {
+                Margin = new Thickness(5),
+                Width = 70,
+                Height = 70
+            };
+            SoundButton.Click += PlaySoundFromButton;
+            ButtonGrid.Children.Add(SoundButton);
+            ButtonGrid.Children.Add(PauseButton);
+            ButtonGrid.Children.Add(StopButton);
+
+            SoundsPanel.Children.Add(ButtonGrid);
         }
     }
 
-    private void PlaySound(object? sender, RoutedEventArgs e)
+    private void PlaySoundFromButton(object? sender, RoutedEventArgs e)
     {
         if (sender is Button btn
+        && btn.Content is object BtnContent
+        && BtnContent.ToString() is string BtnContentString){
+            if (JsonOk
             && SoundsNamesDict["filenames"] is JsonObject filenames
-            && btn.Content is object BtnContent
-            && BtnContent.ToString() is string BtnContentString
-            && filenames[BtnContentString] is JsonValue filename){
-            
-            string FilePath = @".\sounds\" + filename.GetValue<string>();
-            Console.WriteLine("Playing \"" + btn.Content + "\" filename : " + filename);
-
-            if (OperatingSystem.IsWindows())
+            && filenames[BtnContentString] is JsonValue filename)
             {
-                using var DurationReader = new MediaFoundationReader(FilePath);
-                using var Sound = new MediaFoundationReader(FilePath);
-
-                using MMDeviceEnumerator enumerator = new MMDeviceEnumerator();
-
-                using var devices = enumerator.EnumerateAudioEndPoints(
-                    DataFlow.Render,
-                    DeviceState.Active
-                );
-                using var device = devices[0];
-
-                var Output = new WasapiOut(
-                    device,
-                    AudioClientShareMode.Shared,
-                    false,
-                    0
-                );
-
-                Output.Init(Sound);
-                Output.Play();
-
-                TimeSpan Duration = DurationReader.TotalTime;
-                Task.Delay(Duration);
+                PlaySound(BtnContentString, filename.GetValue<string>());
             }
-            
+            else if (ListFilesLocal(@".\sounds", "*.mp3").Contains(BtnContentString))
+            {
+                PlaySound(BtnContentString, BtnContentString);
+            }
+            else
+            {
+                error("BtnContent does not match any known sound!");
+            }
+        }
+    }
+
+    private void PlaySound(string SoundName, string filename)
+    {
+        string FilePath = @".\sounds\" + filename;
+        Console.WriteLine("Playing \"" + SoundName + "\" filename : " + filename);
+
+        if (OperatingSystem.IsWindows())
+        {
+            using var DurationReader = new MediaFoundationReader(FilePath);
+            using var Sound = new MediaFoundationReader(FilePath);
+
+            using MMDeviceEnumerator enumerator = new MMDeviceEnumerator();
+
+            using var devices = enumerator.EnumerateAudioEndPoints(
+                DataFlow.Render,
+                DeviceState.Active
+            );
+            using var device = devices[0];
+
+            var Output = new WasapiOut(
+                device,
+                AudioClientShareMode.Shared,
+                false,
+                0
+            );
+
+            Output.Init(Sound);
+            Output.Play();
+
+            TimeSpan Duration = DurationReader.TotalTime;
+            Task.Delay(Duration);
         }
     }
 
     private async void AddSound(object sender, RoutedEventArgs args)
     {
-        // Get top level from the current control. Alternatively, you can use Window reference instead.
-        var topLevel = TopLevel.GetTopLevel(this);
+        var toplevel = GetTopLevel(this);
+
+        if (!(toplevel is TopLevel topLevel))
+        {
+            return;
+        }
 
         // Start async operation to open the dialog.
         IReadOnlyList<FilePickerFileType> fileTypes = new[]
@@ -148,30 +200,68 @@ public partial class MainWindow : Window
                 await Task.Delay(50);
             }
 
+            // check if a file with same name exists and rename the copy if yes
+            List<string> filenames = ListFilesLocal(@".\sounds", "*.mp3");
+            string filename;
+
+            if (! filenames.Contains(File.Name))
+            {
+                filename = File.Name;
+            }
+            else
+            {
+                filename = "1_" + File.Name;
+            }
+
+            // add sound to sounds dir and to json
+
             if (JsonOk && SoundsNamesDict["names"] is JsonObject Names && SoundsNamesDict["filenames"] is JsonObject FileNames)
             {
                 var SoundName = File.Name;
 
-                if (SoundNameTextBox.Text is string SoundNameFromTextBox){
+                if (SoundNameTextBox.Text is string SoundNameFromTextBox && SoundNameFromTextBox != ""){
                     SoundName = SoundNameFromTextBox;
                 }
+                
+                string SoundsPath = Path.Combine(Directory.GetCurrentDirectory(), "sounds");
+                string SourcePath = File.Path.LocalPath;
+                
+                string DestinationPath = Path.Combine(SoundsPath, filename);
+                System.IO.File.Copy(SourcePath, DestinationPath, true);
 
-                var keyValue = new KeyValuePair<string, JsonNode?>(File.Name, SoundName);
+                var keyValue = new KeyValuePair<string, JsonNode?>(filename, SoundName);
                 Names.Add(keyValue);
 
-                var keyValue1 = new KeyValuePair<string, JsonNode?>(SoundName, File.Name);
+                var keyValue1 = new KeyValuePair<string, JsonNode?>(SoundName, filename);
                 FileNames.Add(keyValue1);
             }
-
-            string SoundsPath = Path.Combine(Directory.GetCurrentDirectory(), "sounds");
-            string SourcePath = File.Path.LocalPath;
-            string DestinationPath = Path.Combine(SoundsPath, Path.GetFileName(SourcePath));
-            System.IO.File.Copy(SourcePath, DestinationPath, true);
+            else
+            {
+                //if no json just copy
+                string SoundsPath = Path.Combine(Directory.GetCurrentDirectory(), "sounds");
+                string SourcePath = File.Path.LocalPath;
+                string DestinationPath = Path.Combine(SoundsPath, filename);
+                System.IO.File.Copy(SourcePath, DestinationPath, true);
+            }
+            
         }
         AddSoundGrid.IsVisible = false;
         AddSoundGrid.IsEnabled = false;
         SaveJson();
         ListSounds();
+    }
+
+    private List<string> ListFilesLocal(string dir, string pattern)
+    {
+        string AbsolutePath = Path.Combine(Directory.GetCurrentDirectory(), dir);
+        DirectoryInfo Dir = new DirectoryInfo(AbsolutePath);
+        FileInfo[] Files = Dir.GetFiles(pattern);
+        List<string> filenames = [];
+        foreach(FileInfo file in Files)
+        {
+            filenames.Add(file.Name);
+        }
+        return filenames;
     }
 
     private void SaveJson()
@@ -180,9 +270,9 @@ public partial class MainWindow : Window
         File.WriteAllText("sounds/SoundBindings.json", JsonString);
     }
 
-    private void error()
+    private void error(string e)
     {
-        Console.WriteLine("Error!");
+        Console.WriteLine("Error!" + e);
         Close();
     }
 }
