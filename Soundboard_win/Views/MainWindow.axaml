@@ -15,12 +15,25 @@
         <vm:MainWindowViewModel/>
     </Design.DataContext>
     <Grid>
-        <StackPanel IsVisible="False" IsEnabled="False" Margin="5" Name="AddSoundGrid" VerticalAlignment="Center" HorizontalAlignment="Center">
-            <Border Background="Transparent">
+        <StackPanel IsVisible="False" IsEnabled="False" Margin="5" Name="AddSoundPanel" VerticalAlignment="Center" HorizontalAlignment="Center">
+            <Border Background="DimGray">
                 <StackPanel >
-                    <TextBlock Name="SoundNameTextBlock"></TextBlock>
-                    <TextBox Name="SoundNameTextBox" PlaceholderText="Name displayed in the app, blank for file name"></TextBox>
-                    <Button Name="ValidateAddSound">Add sound</Button>
+                    <TextBlock Name="SoundNameTextBlock" Margin="5"></TextBlock>
+                    <TextBox Name="SoundNameTextBox" Margin="5" PlaceholderText="Name displayed in the app, blank for file name"></TextBox>
+                    <Button Name="ValidateAddSound" Margin="5">Add sound</Button>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+        <StackPanel IsVisible="False" IsEnabled="False" Margin="5" Name="ManageSoundPanel" VerticalAlignment="Center" HorizontalAlignment="Center">
+            <Border Background="DimGray">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Name="SoundFileNameTextBlock" Margin="5"></TextBlock>
+                        
+                    </StackPanel>
+                    <TextBox Name="ManageSoundNameTextBox" Margin="5" PlaceholderText="Name displayed in the app, blank for file name"></TextBox>
+                    <Button Name="ValidateManageSound" Margin="5">OK</Button>
+                    <Button Name="CancelManageSound" Margin="5">Cancel</Button>
                 </StackPanel>
             </Border>
         </StackPanel>
@@ -32,7 +45,6 @@
         </StackPanel>
         <StackPanel VerticalAlignment="Bottom" HorizontalAlignment="Center" Orientation="Horizontal">
             <Button Click="AddSound" Margin="5">Add Sound</Button>
-            <Button>Manage sounds</Button>
         </StackPanel>
     </Grid>
 </Window>

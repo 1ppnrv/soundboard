@@ -14,6 +14,8 @@ using System.Text.Json;
 using Avalonia;
 using Avalonia.Layout;
 using Avalonia.VisualTree;
+using Avalonia.Input;
+using Avalonia.Media;
 
 namespace Soundboard_win.Views;
 
@@ -57,48 +59,86 @@ public partial class MainWindow : Window
         
         foreach(string filename in Files){
             str = str + "," + filename;
-            string BtnContent = filename;
+            string BtnText = filename;
             if (JsonOk)
             {
                 if(SoundsNamesDict["names"] is JsonObject names && names[filename] is JsonValue name)
-                BtnContent = name.GetValue<string>();
+                BtnText = name.GetValue<string>();
             }
+
+            var SoundButtonContent = new TextBlock
+            {
+                VerticalAlignment = VerticalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Text = BtnText,
+                TextAlignment = TextAlignment.Center,
+                TextWrapping = TextWrapping.Wrap
+            };
             
             var SoundButton = new Button
             {
                 Width = 70,
                 Height = 70,
-                Content = BtnContent,
-                ClickMode = ClickMode.Press
+                Content = SoundButtonContent,
+                ClickMode = ClickMode.Press,
             };
+            SoundButton.Click += PlaySoundFromButton;
 
             var StopButton = new Button
             {
                 Width = 30,
-                Height = 30,
+                Height = 20,
                 Margin = new Thickness(8),
-                Name = BtnContent,
-                Content = "S",
+                Name = BtnText,
+                Content = "Stop",
                 VerticalAlignment = VerticalAlignment.Bottom,
                 HorizontalAlignment = HorizontalAlignment.Center,
-                Padding = new Thickness(2),
+                Padding = new Thickness(0,5,0,0),
                 IsVisible = false,
                 IsEnabled = false,
                 ClickMode = ClickMode.Press
             };
-
             StopButton.Click += StopSoundFromButton;
+
+            var ManageBtnThreeDots = new TextBlock
+            {
+                Margin = new Thickness(0,-5,0,0),
+                Text = "...",
+                TextAlignment = TextAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Center
+            };
+
+            var ManageBtn = new Button
+            {
+                Width = 20,
+                Height = 14,
+                IsVisible = false,
+                IsEnabled = false,
+                Padding = new Thickness(0,-5,0,0),
+                Content = "...",
+                VerticalAlignment = VerticalAlignment.Top,
+                HorizontalAlignment = HorizontalAlignment.Right,
+                Margin = new Thickness(5),
+                Background = Brushes.Black
+            };
+            ManageBtn.Click += ManageSoundFromBtn;
+
 
             var ButtonGrid = new Grid
             {
                 Margin = new Thickness(5),
                 Width = 70,
                 Height = 70,
-                Name = "BtnGrid" + BtnContent
+                Name = "BtnGrid" + BtnText
             };
-            SoundButton.Click += PlaySoundFromButton;
+            ButtonGrid.PointerEntered += SoundGridHovered;
+            ButtonGrid.PointerExited += SoundGridHovered;
+
+
             ButtonGrid.Children.Add(SoundButton);
             ButtonGrid.Children.Add(StopButton);
+            ButtonGrid.Children.Add(ManageBtn);
 
             SoundsPanel.Children.Add(ButtonGrid);
         }
@@ -107,24 +147,24 @@ public partial class MainWindow : Window
     private void PlaySoundFromButton(object? sender, RoutedEventArgs e)
     {
         if (sender is Button btn
-        && btn.Content is object BtnContent
-        && BtnContent.ToString() is string BtnContentString){
+        && btn.Content is TextBlock BtnTextBlock
+        && BtnTextBlock.Text is string BtnText){
+
             if (JsonOk
             && SoundsNamesDict["filenames"] is JsonObject filenames
-            && filenames[BtnContentString] is JsonValue filename
-            && OperatingSystem.IsWindows())
+            && filenames[BtnText] is JsonValue filename)
             {
-                if(!RunningPlayers.ContainsKey(BtnContentString)){
-                    PlaySound(BtnContentString, filename.GetValue<string>());
+                if(!RunningPlayers.ContainsKey(BtnText)){
+                    PlaySound(BtnText, filename.GetValue<string>());
                 }
                 else
                 {
-                    PlayPauseSound(BtnContentString);
+                    PlayPauseSound(BtnText);
                 }
             }
-            else if (ListFilesLocal(@".\sounds", "*.mp3").Contains(BtnContentString))
+            else if (ListFilesLocal(@".\sounds", "*.mp3").Contains(BtnText))
             {
-                PlaySound(BtnContentString, BtnContentString);
+                PlaySound(BtnText, BtnText);
             }
             else
             {
@@ -174,10 +214,12 @@ public partial class MainWindow : Window
 
     private void SoundEnded(StoppedEventArgs args, Button button, string sound)
     {
-        button.IsVisible = false;
-        button.IsEnabled = false;
-        RunningPlayers[sound].Dispose();
-        RunningPlayers.Remove(sound);
+        if (RunningPlayers.ContainsKey(sound)){
+            button.IsVisible = false;
+            button.IsEnabled = false;
+            RunningPlayers[sound].Dispose();
+            RunningPlayers.Remove(sound);
+        }
     }
 
     private async void AddSound(object? sender, RoutedEventArgs args)
@@ -209,8 +251,8 @@ public partial class MainWindow : Window
         {
             SoundNameTextBox.Clear();
             SoundNameTextBlock.Text = File.Name;
-            AddSoundGrid.IsVisible = true;
-            AddSoundGrid.IsEnabled = true;
+            AddSoundPanel.IsVisible = true;
+            AddSoundPanel.IsEnabled = true;
 
             while (!ValidateAddSound.IsPressed)
             {
@@ -268,10 +310,50 @@ public partial class MainWindow : Window
             }
             
         }
-        AddSoundGrid.IsVisible = false;
-        AddSoundGrid.IsEnabled = false;
+        AddSoundPanel.IsVisible = false;
+        AddSoundPanel.IsEnabled = false;
         SaveJson();
         ListSounds();
+    }
+
+    private void SoundGridHovered(object? sender, PointerEventArgs args)
+    {
+        if(sender is Grid Grid
+        &&Grid.Children.ElementAt(2) is Button ManageBtn)
+        {
+            if (ManageBtn.IsVisible)
+            {
+                ManageBtn.IsVisible = false;
+                ManageBtn.IsEnabled = false;
+            }
+            else if (! ManageSoundPanel.IsVisible)
+            {
+                ManageBtn.IsVisible = true;
+                ManageBtn.IsEnabled = true;
+            }
+        }
+    }
+
+    private void ManageSoundFromBtn(object? sender, RoutedEventArgs args)
+    {
+        if (sender is Button Btn
+        && Btn.Parent is Grid ParentGrid
+        && ParentGrid.Children.ElementAt(0) is Button BrotherBtn
+        && BrotherBtn.Content is TextBlock BtnTextBlock
+        && BtnTextBlock.Text is string BtnText)
+        {
+            ManageSound(BtnText);
+        }
+    }
+
+    private void ManageSound(string sound)
+    {
+        foreach(KeyValuePair<string, WasapiPlayer> Playing in RunningPlayers.AsEnumerable())
+        {
+            Playing.Value.Stop();
+        }
+        ManageSoundPanel.IsVisible = true;
+        ManageSoundPanel.IsEnabled = true;
     }
 
     private List<string> ListFilesLocal(string dir, string pattern)
@@ -290,19 +372,21 @@ public partial class MainWindow : Window
     private void PlayPauseSoundFromButton(object? sender, RoutedEventArgs args)
     {
         if (sender is Button btn
-        && btn.Content is object BtnContent
-        && BtnContent.ToString() is string BtnContentString)
+        && btn.Content is TextBlock BtnTextBlock
+        && BtnTextBlock.Text is string BtnText)
         {
-            PlayPauseSound(BtnContentString);
+            PlayPauseSound(BtnText);
         }
     }
     private void PlayPauseSound(string sound)
     {
-        if (RunningPlayers[sound].PlaybackState == PlaybackState.Playing){
-            RunningPlayers[sound].Pause();
-        }else if (RunningPlayers[sound].PlaybackState == PlaybackState.Paused)
-        {
-            RunningPlayers[sound].Play();
+        if (RunningPlayers.ContainsKey(sound)){
+            if (RunningPlayers[sound].PlaybackState == PlaybackState.Playing){
+                RunningPlayers[sound].Pause();
+            }else if (RunningPlayers[sound].PlaybackState == PlaybackState.Paused)
+            {
+                RunningPlayers[sound].Play();
+            }
         }
     }
 
@@ -311,17 +395,19 @@ public partial class MainWindow : Window
         if (sender is Button btn
         && btn.Parent is Grid ParentGrid
         && ParentGrid.Children.ElementAt(0) is Button BrotherBtn
-        && BrotherBtn.Content is object BtnContent
-        && BtnContent.ToString() is string BtnContentString)
+        && BrotherBtn.Content is TextBlock BtnTextBlock
+        && BtnTextBlock.Text is string BtnText)
         {
-            StopSound(BtnContentString);
+            StopSound(BtnText);
         }
     }
 
     private void StopSound(string sound)
     {
         Console.WriteLine("stop");
-        RunningPlayers[sound].Stop();
+        if (RunningPlayers.ContainsKey(sound)){
+            RunningPlayers[sound].Stop();
+        }
     }
 
     private void SaveJson()
@@ -332,7 +418,7 @@ public partial class MainWindow : Window
 
     private void error(string e)
     {
-        Console.WriteLine("Error!" + e);
+        Console.WriteLine("Error : " + e);
         Close();
     }
 }
