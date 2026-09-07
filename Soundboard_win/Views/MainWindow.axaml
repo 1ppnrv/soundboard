@@ -29,18 +29,21 @@
                 <StackPanel>
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Name="SoundFileNameTextBlock" Margin="5"></TextBlock>
-                        
+                        <Button Click="SelectFile" Name="NewFileBtn"><TextBlock>Select new file</TextBlock></Button>
                     </StackPanel>
                     <TextBox Name="ManageSoundNameTextBox" Margin="5" PlaceholderText="Name displayed in the app, blank for file name"></TextBox>
-                    <Button Name="ValidateManageSound" Margin="5">OK</Button>
-                    <Button Name="CancelManageSound" Margin="5">Cancel</Button>
+                    <StackPanel Orientation="Horizontal">
+                        <Button Name="ValidateManageSound" Margin="5">OK</Button>
+                        <Button Name="CancelManageSound" Margin="5">Cancel</Button>
+                        <Button Name="DeleteSound" Margin="5" Background="Red">Delete sound</Button>
+                    </StackPanel>
                 </StackPanel>
             </Border>
         </StackPanel>
         <StackPanel Name="MainPanel" HorizontalAlignment="Left" VerticalAlignment="Top">
-            <StackPanel Name="SoundsPanel" Orientation="Horizontal">
+            <WrapPanel Name="SoundsPanel" Orientation="Horizontal">
 
-            </StackPanel>
+            </WrapPanel>
 
         </StackPanel>
         <StackPanel VerticalAlignment="Bottom" HorizontalAlignment="Center" Orientation="Horizontal">
