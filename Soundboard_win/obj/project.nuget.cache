@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "Qz47Sb/3BhM=",
+  "dgSpecHash": "7xAlEhBEopE=",
   "success": true,
   "projectFilePath": "D:\\Alfred\\Documents\\vscode\\MrBap\\soundboard\\Soundboard_win\\Soundboard_win.csproj",
   "expectedPackageFiles": [
@@ -30,10 +30,14 @@
     "C:\\Users\\alfre\\.nuget\\packages\\microsoft.extensions.logging.abstractions\\8.0.0\\microsoft.extensions.logging.abstractions.8.0.0.nupkg.sha512",
     "C:\\Users\\alfre\\.nuget\\packages\\microsoft.io.recyclablememorystream\\3.0.1\\microsoft.io.recyclablememorystream.3.0.1.nupkg.sha512",
     "C:\\Users\\alfre\\.nuget\\packages\\naudio\\3.0.1\\naudio.3.0.1.nupkg.sha512",
+    "C:\\Users\\alfre\\.nuget\\packages\\naudio.asio\\3.0.1\\naudio.asio.3.0.1.nupkg.sha512",
     "C:\\Users\\alfre\\.nuget\\packages\\naudio.core\\3.0.1\\naudio.core.3.0.1.nupkg.sha512",
+    "C:\\Users\\alfre\\.nuget\\packages\\naudio.dmo\\3.0.1\\naudio.dmo.3.0.1.nupkg.sha512",
     "C:\\Users\\alfre\\.nuget\\packages\\naudio.midi\\3.0.1\\naudio.midi.3.0.1.nupkg.sha512",
     "C:\\Users\\alfre\\.nuget\\packages\\naudio.soundfile\\3.0.1\\naudio.soundfile.3.0.1.nupkg.sha512",
     "C:\\Users\\alfre\\.nuget\\packages\\naudio.wasapi\\3.0.1\\naudio.wasapi.3.0.1.nupkg.sha512",
+    "C:\\Users\\alfre\\.nuget\\packages\\naudio.winforms\\3.0.1\\naudio.winforms.3.0.1.nupkg.sha512",
+    "C:\\Users\\alfre\\.nuget\\packages\\naudio.winmm\\3.0.1\\naudio.winmm.3.0.1.nupkg.sha512",
     "C:\\Users\\alfre\\.nuget\\packages\\skiasharp\\3.119.4\\skiasharp.3.119.4.nupkg.sha512",
     "C:\\Users\\alfre\\.nuget\\packages\\skiasharp.nativeassets.linux\\3.119.4\\skiasharp.nativeassets.linux.3.119.4.nupkg.sha512",
     "C:\\Users\\alfre\\.nuget\\packages\\skiasharp.nativeassets.macos\\3.119.4\\skiasharp.nativeassets.macos.3.119.4.nupkg.sha512",
