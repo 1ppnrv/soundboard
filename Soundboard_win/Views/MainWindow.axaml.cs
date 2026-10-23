@@ -3,6 +3,7 @@ using Avalonia.Interactivity;
 using System;
 using System.IO;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 using NAudio.Wave;
 using NAudio.CoreAudioApi;
 using System.Threading.Tasks;
@@ -20,6 +21,7 @@ namespace Soundboard_win.Views;
 
 public partial class MainWindow : Window
 {
+    private MMDevice? OutputDevice;
     private JsonObject SoundsNamesDict = new JsonObject();
     private bool JsonOk = false;
 
@@ -27,6 +29,14 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+
+        using MMDeviceEnumerator enumerator = new MMDeviceEnumerator();
+        using var devices = enumerator.EnumerateAudioEndPoints(
+            DataFlow.Render,
+            DeviceState.Active
+        );
+        OutputDevice = devices[0];
+
         ListSounds();
     }
 
@@ -180,20 +190,11 @@ public partial class MainWindow : Window
         string FilePath = @".\sounds\" + filename;
         Console.WriteLine("Playing \"" + SoundName + "\" filename : " + filename);
 
-        using var DurationReader = new MediaFoundationReader(FilePath);
         var Sound = new MediaFoundationReader(FilePath);
 
-        using MMDeviceEnumerator enumerator = new MMDeviceEnumerator();
+        var Output = new WasapiPlayerBuilder().WithDevice(OutputDevice).WithLatency(50).Build();
 
-        using var devices = enumerator.EnumerateAudioEndPoints(
-            DataFlow.Render,
-            DeviceState.Active
-        );
-        var device = devices[0];
-
-        var TestOutput = new WasapiPlayerBuilder().WithDevice(device).WithLatency(0).Build();
-
-        TestOutput.Init(Sound);
+        Output.Init(Sound);
 
         Button StopButton;
         if (SoundsPanel.Children
@@ -204,13 +205,13 @@ public partial class MainWindow : Window
             StopButton.IsEnabled = true;
             StopButton.IsVisible = true;
 
-            TestOutput.PlaybackStopped += (sender, args) => SoundEnded(args, StopButton, SoundName);
+            Output.PlaybackStopped += (sender, args) => SoundEnded(args, StopButton, SoundName);
         }
         else
         {
             Console.WriteLine("btn not found " + SoundName);
         }
-        RunningPlayers.Add(SoundName, TestOutput);
+        RunningPlayers.Add(SoundName, Output);
         RunningPlayers[SoundName].Play();
     }
 
@@ -581,7 +582,7 @@ public partial class MainWindow : Window
 
     private void SaveJson()
     {
-        string JsonString = JsonSerializer.Serialize(SoundsNamesDict);
+        string JsonString = JsonSerializer.Serialize(SoundsNamesDict, SoundboardJsonContext.Default.JsonObject);
         File.WriteAllText("sounds/SoundBindings.json", JsonString);
     }
 
@@ -590,4 +591,19 @@ public partial class MainWindow : Window
         Console.WriteLine("Error : " + e);
         Close();
     }
+    protected override void OnClosed(EventArgs e)
+{
+    foreach (var player in RunningPlayers.Values)
+        player.Dispose();
+
+    OutputDevice?.Dispose();
+
+    base.OnClosed(e);
+}
+}
+
+[JsonSourceGenerationOptions(GenerationMode = JsonSourceGenerationMode.Metadata)]
+[JsonSerializable(typeof(JsonObject))]
+internal partial class SoundboardJsonContext : JsonSerializerContext
+{
 }
