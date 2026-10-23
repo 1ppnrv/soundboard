@@ -1,0 +1,3 @@
+gerer la redirection du son des apps dans voicemeeter
+
+faire l'app mobile/site web pour le controle a distance
